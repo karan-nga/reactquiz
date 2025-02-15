@@ -9,12 +9,16 @@ import Question from "./compoments/Question";
 import NextButton from "./compoments/NextButton";
 import Progress from "./compoments/Progress";
 import FinishScreen from "./compoments/FinishScreen";
+import Footer from "./compoments/Footer";
+import Timer from "./compoments/Timer";
+const MAX_TIME_FOR_QUESTION = 30;
 const initialState = {
   question: [],
   status: "loading",
   index: 0,
   answer: null,
   point: 0,
+  secondRemaing: 0,
 };
 function reducer(state, action) {
   switch (action.type) {
@@ -33,6 +37,7 @@ function reducer(state, action) {
       return {
         ...state,
         status: "active",
+        secondRemaing: state.question.length * MAX_TIME_FOR_QUESTION,
       };
     }
     case "newAnswer": {
@@ -59,15 +64,20 @@ function reducer(state, action) {
         status: "completed",
       };
     }
+    case "tick": {
+      return {
+        ...state,
+        secondRemaing: state.secondRemaing - 1,
+        status: state.secondRemaing <= 0 ? "quizEnd" : state.status,
+      };
+    }
     default:
       throw new Error("Action not found");
   }
 }
 function App() {
-  const [{ question, status, index, answer, point }, dispatch] = useReducer(
-    reducer,
-    initialState
-  );
+  const [{ question, status, index, answer, point, secondRemaing }, dispatch] =
+    useReducer(reducer, initialState);
   useEffect(function () {
     fetch("http://localhost:8000/questions")
       .then((res) => res.json())
@@ -76,7 +86,6 @@ function App() {
   }, []);
   const numQuestion = question.length;
   const maxScore = question.reduce((a, b) => a + b.points, 0);
-
   return (
     <div className="app">
       <Header />
@@ -101,12 +110,15 @@ function App() {
               answer={answer}
               score={point}
             />
-            <NextButton
-              dispact={dispatch}
-              answer={answer}
-              currentQuestion={index}
-              totalQuestion={numQuestion}
-            />
+            <Footer>
+              <Timer dispatch={dispatch} secondRemaing={secondRemaing} />
+              <NextButton
+                dispact={dispatch}
+                answer={answer}
+                currentQuestion={index}
+                totalQuestion={numQuestion}
+              />
+            </Footer>
           </>
         )}
         {status == "completed" && (
